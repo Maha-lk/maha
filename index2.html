@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ground Water Prediction Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 1px solid #ddd;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #4b0082, #9400d3);
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .form {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+            width: 50%;
+        }
+
+        .form-group label {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .form-group input[type="number"], .form-group select {
+            width: 50%;
+            font-size: 16px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            transition: border-color 0.3s;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .form-group input[type="number"]:focus, .form-group select:focus {
+            border-color: #9400d3;
+            outline: none;
+        }
+
+        .btn {
+            font-size: 16px;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+
+        .btn-primary {
+            background-color: #3f0097;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background-color: #5a00d6;
+            transform: translateY(-2px);
+        }
+
+        #result, #years-supply {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #3f0097;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h3>Ground Water Prediction Dashboard</h3>
+            <p style="font-size:15px;letter-spacing:.5px;">A comprehensive dashboard for predicting ground water quality.</p>
+        </header>
+        <form class="form">
+            <div class="form-group">
+                <label for="purity_level">Purity Level:</label>
+                <select id="purity_level" name="purity_level">
+                    <option value="0">0-20%</option>
+                    <option value="1">21-40%</option>
+                    <option value="2">41-60%</option>
+                    <option value="3">61-80%</option>
+                    <option value="4">81-100%</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="depth">Depth of the Water (m):</label>
+                <input type="number" id="depth" name="depth" min="0" required>
+            </div>
+
+            <div class="form-group">
+                <label for="location">Location of the Borewell:</label>
+                <select id="location" name="location">
+                    <option value="1">Borewell 1</option>
+                    <option value="2">Borewell 2</option>
+                    <option value="3">Borewell 3</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="pH_level">pH Level:</label>
+                <input type="number" id="pH_level" name="pH_level" step="0.1" min="0" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Submit</button>
+
+            <div id="result"></div>
+            <div id="years-supply"></div>
+        </form>
+    </div>
+
+    <script>
+        const form = document.querySelector('form');
+        const resultDiv = document.querySelector('#result');
+        const yearsSupplyDiv = document.querySelector('#years-supply');
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const purityLevel = parseInt(document.getElementById('purity_level').value);
+            const depth = parseInt(document.getElementById('depth').value);
+            const location = document.getElementById('location').value;
+            const pHLevel = parseFloat(document.getElementById('pH_level').value);
+            
+            let result = '';
+            let yearsSupply = 0;
+
+            // Check for NaN values
+            if (isNaN(depth) || isNaN(pHLevel)) {
+                resultDiv.textContent = 'Please enter valid numerical values for depth and pH level.';
+                yearsSupplyDiv.textContent = '';
+                return;
+            }
+
+            if (purityLevel >= 3 && depth >= 10 && pHLevel >= 7 && pHLevel <= 9) {
+                result = 'Drinkable water';
+            } else {
+                result = 'Non-drinkable water';
+            }
+
+            // Determine the factor based on the depth
+            let factor = 1;
+            if (depth < 5) {
+                factor = 0.5;
+            } else if (depth >= 5 && depth < 10) {
+                factor = 1;
+            } else {
+                factor = 1.5;
+            }
+
+            // Calculate the years of water supply
+            yearsSupply = depth * factor;
+
+            resultDiv.textContent = result;
+            yearsSupplyDiv.textContent = `Estimated years of water supply: ${yearsSupply.toFixed(2)} years`;
+
+            // Send data to the server
+            fetch('http://localhost:3000/api/water', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    purityLevel,
+                    depth,
+                    location,
+                    pHLevel,
+                    result,
+                    yearsSupply
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.message);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>
